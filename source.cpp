@@ -40,8 +40,7 @@ void ucitajIzDatoteke() {
 
 void prikaziMrezu() {
     printf("MAKSIMALNA VISINA STOGA :: %d", MAX_KONTEJNERA);
-    printf("\n");
-    printf("\n    A     B     C\n");
+    printf("\n\n    A     B     C\n");
     for (int i = 0; i < RED; i++) {
         printf("%d ", i + 1);
         for (int j = 0; j < STUPAC; j++) {
@@ -58,9 +57,9 @@ void prikaziMrezu() {
 }
 
 int indeksStupca(char slovo) {
-    if (slovo == 'A') return 0;
-    if (slovo == 'B') return 1;
-    if (slovo == 'C') return 2;
+    if (slovo == 'A' || slovo == 'a') return 0;
+    if (slovo == 'B' || slovo == 'b') return 1;
+    if (slovo == 'C' || slovo == 'c') return 2;
     return -1;
 }
 
@@ -92,12 +91,12 @@ int provjeriDupliciraneKontejnere(char* naziv) {
         for (int j = 0; j < STUPAC; j++) {
             for (int k = 0; k < mreza[i][j].broj; k++) {
                 if (strcasecmp_custom(mreza[i][j].kontejneri[k], naziv) == 0) {
-                    return 1; // Kontejner vec postoji
+                    return 1;
                 }
             }
         }
     }
-    return 0; // Kontejner ne postoji
+    return 0;
 }
 
 void addCelija(int red, int stupac) {
@@ -110,7 +109,6 @@ void addCelija(int red, int stupac) {
     printf("Unesi oznaku kontejnera :: ");
     scanf("%s", novi);
 
-    // Provjera postoji li već kontejner s istim nazivom u cijeloj mrezi
     if (provjeriDupliciraneKontejnere(novi)) {
         printf("Kontejner s tim nazivom vec postoji u mrezi!\n");
         return;
@@ -119,67 +117,6 @@ void addCelija(int red, int stupac) {
     strcpy(mreza[red][stupac].kontejneri[mreza[red][stupac].broj], novi);
     mreza[red][stupac].broj++;
     spremiUDatoteku();
-}
-
-void deleteCelija(int red, int stupac) {
-    readCelija(red, stupac);
-    if (mreza[red][stupac].broj == 0) return;
-    char oznaka[NAZIV_DULJINA];
-    printf("Unesi oznaku kontejnera za brisanje :: ");
-    scanf("%s", oznaka);
-    int nasao = 0;
-    for (int i = 0; i < mreza[red][stupac].broj; i++) {
-        if (strcasecmp_custom(mreza[red][stupac].kontejneri[i], oznaka) == 0) {
-            nasao = 1;
-            for (int j = i; j < mreza[red][stupac].broj - 1; j++) {
-                strcpy(mreza[red][stupac].kontejneri[j], mreza[red][stupac].kontejneri[j + 1]);
-            }
-            mreza[red][stupac].broj--;
-            spremiUDatoteku();
-            printf("Obrisano.\n");
-            break;
-        }
-    }
-    if (!nasao) printf("Kontejner nije pronadjen.\n");
-}
-
-void moveCelija(int red, int stupac) {
-    readCelija(red, stupac);
-    if (mreza[red][stupac].broj == 0) {
-        printf("Celija je prazna.\n");
-        return;
-    }
-
-    char oznaka[NAZIV_DULJINA];
-    printf("Unesi oznaku kontejnera za premjestanje (samo gornji dozvoljen) :: ");
-    scanf("%s", oznaka);
-
-    // Dozvoljeno samo ako je kontejner na vrhu
-    if (strcasecmp_custom(mreza[red][stupac].kontejneri[mreza[red][stupac].broj - 1], oznaka) != 0) {
-        printf("Mozes premjestiti samo kontejner koji je na vrhu stoga.\n");
-        return;
-    }
-
-    char novaCelija[3];
-    printf("Unesi oznaku ciljne celije (npr. B2) :: ");
-    scanf("%s", novaCelija);
-    int noviStupac = indeksStupca(novaCelija[0]);
-    int noviRed = novaCelija[1] - '1';
-    if (noviStupac < 0 || noviRed < 0 || noviRed >= RED || noviStupac >= STUPAC) {
-        printf("Neispravna celija.\n");
-        return;
-    }
-    if (mreza[noviRed][noviStupac].broj >= MAX_KONTEJNERA) {
-        printf("Ciljna celija je puna.\n");
-        return;
-    }
-
-    // Premjesti kontejner
-    strcpy(mreza[noviRed][noviStupac].kontejneri[mreza[noviRed][noviStupac].broj], oznaka);
-    mreza[noviRed][noviStupac].broj++;
-    mreza[red][stupac].broj--;
-    spremiUDatoteku();
-    printf("Premjesteno.\n");
 }
 
 void ocistiKonzolu() {
@@ -195,11 +132,10 @@ int main() {
     while (1) {
         ocistiKonzolu();
         prikaziMrezu();
-        printf("Odaberi operaciju (READ, ADD, DELETE, MOVE, EXIT) :: ");
+        printf("Odaberi operaciju (READ, ADD, EXIT) :: ");
         char operacija[10];
         scanf("%s", operacija);
 
-        // Ignoriranje razlike izmedju velikih i malih slova
         for (int i = 0; operacija[i]; i++) {
             operacija[i] = tolower(operacija[i]);
         }
@@ -219,8 +155,6 @@ int main() {
 
         if (strcmp(operacija, "read") == 0) readCelija(red, stupac);
         else if (strcmp(operacija, "add") == 0) addCelija(red, stupac);
-        else if (strcmp(operacija, "delete") == 0) deleteCelija(red, stupac);
-        else if (strcmp(operacija, "move") == 0) moveCelija(red, stupac);
         else printf("Nepoznata operacija.\n");
 
         printf("\nPritisni ENTER za nastavak...");
