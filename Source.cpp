@@ -4,6 +4,8 @@
 #include <ctype.h>
 
 #include "boje.h"  // Boje
+
+//Za svaki slucaj
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -13,11 +15,14 @@
 #define MAX_KAPACITET 3
 #define NAZIV_DULJINA 15
 
-//Globalna varijabla :)
+//Globalna varijabla :) 
+//Ovo koristim za brojanje novododanih
+//kontejnera pri svakom pokretanju programa.
 extern int GLOBALNA_BROJILO;  
 int GLOBALNA_BROJILO = 0;    
 //
 
+//Strukture za kontejnere, znaci oznaka, broj kontejnera i kapacitet.
 typedef struct {
     char oznaka[NAZIV_DULJINA];
 } kontejner;
@@ -30,13 +35,22 @@ typedef struct {
 
 static celija mreza[RED][STUPAC];
 
-// Makro funkcije
+//Makro funkcije s ternarnim operatorima
+
+//Provjerava je li znak slovo, ako nije, znaci nevazeci unos i vraca -1
+//Ako je, pretvara u veliko slovo, usporedjuje a s A, B i C i vraca 
+//odgovarajuci indeks, tj 0, 1 ili 2. Ako nije A, B ili C onda je nevazece pa -1.
 #define indeks_stupca(slovo) \
     (!isalpha((unsigned char)(slovo)) ? -1 : \
     (toupper((unsigned char)(slovo)) == 'A' ? 0 : \
     (toupper((unsigned char)(slovo)) == 'B' ? 1 : \
     (toupper((unsigned char)(slovo)) == 'C' ? 2 : -1))))
 
+//Usporedjuje dva stringa neosjetljivo na velika i mala slova.
+//Ako su s1 ili s2 NULL, vraca -1
+//Uglavnom pretvara svaki znak u malo slovo i usporedjuje znak
+//po znak i ako se razlikuju, prekida se petlja.
+//Vraca 0 ako su stringovi jednaki i 1 ako su razliciti.
 #define strcasecmp_custom(s1, s2) \
     (!(s1) || !(s2) ? -1 : \
     ( \
@@ -50,7 +64,13 @@ static celija mreza[RED][STUPAC];
         (*_s1 || *_s2); \
         } \
     ))
-
+    
+//Provjerava postoji li kontejner s istom oznakom u mrezi.
+//Ako je naziv NULL, vraca 0 znaci nema duplikata.
+//Prolazi kroz svaku celiju kao red x stupac i u svakoj
+//celiji provjerava sve kontejnere s funkcijom iznad.
+//Ako se pronadje isti, _found se postavlja da je 1 i prekida se pretraga.
+//Vraca 1 ako postoji duplikat i 0 ako ne postoji.
 #define provjeri_duplicirane_kontejnere(naziv) \
     (!(naziv) ? 0 : \
     ( \
@@ -69,6 +89,10 @@ static celija mreza[RED][STUPAC];
     ))
 
 // Funkcije za upravljanje memorijom i datotekama
+
+//Spremanje u datoteku, otvaram je u binarnom modu pisanja i za svaku
+//celiju mreza[i][j] zapisujem po redu broj kontejnera, kapacitet i oznake kontejnera.
+//Ako nista, onda perror.
 static void spremi_u_datoteku(void) {
     FILE* dat = fopen("kontejneri.bin", "wb");
     if (!dat) {
@@ -91,6 +115,9 @@ static void spremi_u_datoteku(void) {
     fclose(dat);
 }
 
+//Funkcija ucitavanja iz datoteke
+//Otvaram je u binarnom modu citanja, ucitavam u istom formatu kako su
+//podaci spremljeni, ako ne moze, gotov program.
 static void ucitaj_iz_datoteke(void) {
     FILE* dat = fopen("kontejneri.bin", "rb");
     if (!dat) {
@@ -130,6 +157,9 @@ static void ucitaj_iz_datoteke(void) {
     fclose(dat);
 }
 
+//Funkcija za ciscenje konzole, za windows cls, ako nije onda pretpostavljam
+//da je linux ili nesto trece pa ide clear
+
 static void ocisti_konzolu(void) {
 #ifdef _WIN32
     system("cls");
@@ -138,7 +168,8 @@ static void ocisti_konzolu(void) {
 #endif
 }
 
-// Prikaz mreže 
+//Funkcija za prikaz mreze
+//Malo ASCII art-a, oznaceni redovi i stupci i broj kontejnera po celiji
 static void prikazi_mrezu(void) {
     printf(CRVENA "\n     A       B       C   \n" RESET);
     printf(PLAVA "   +-------+-------+-------+\n" RESET);
@@ -158,7 +189,14 @@ static void prikazi_mrezu(void) {
     printf("\n");
 }
 
-// Operacije nad celijama
+
+
+// Operacije nad celijama //
+
+//Citanje sadrzaja celije, prvo provjera jesu li red i stupac unutar granica.
+//Ako je prazna ispisat ce prazno, ako nije onda ispisuje kontejnere od dna prema vrhu.
+//Kontejneri takodjer nacrtani.
+
 static void read_celija(const int red, const int stupac) {
     if (red < 0 || red >= RED || stupac < 0 || stupac >= STUPAC) {
         return;
@@ -180,6 +218,12 @@ static void read_celija(const int red, const int stupac) {
         printf(ZUTA "  +------------+\n" RESET);
     }
 }
+
+
+//Dodavanje novih kontejnera u celiju
+//Prvo povecavanje globalnog brojila, onda provjera je li celija puna,
+//Nakon tog se trazi unos oznake pa se provjerava postoji li vec jedan takav.
+//Ako sve stima, kontejner se dodaje i promjene se spremaju u datoteku.
 
 static void add_celija(const int red, const int stupac) {
     GLOBALNA_BROJILO++;
@@ -205,6 +249,10 @@ static void add_celija(const int red, const int stupac) {
     printf(ZELENA "Kontejner dodan.\n" RESET);
 }
 
+//Funkcija za brisanje kontejnera
+//Prikazuje sadrzaj celije pa trazi unos oznake kontejnera za brisanje.
+//Ako kontejner postoji, pomice se sve nakon njega za jedno mjesto unatrag tj brise.
+//Ako ne postoji, baca poruku da ne postoji.
 static void delete_celija(const int red, const int stupac) {
     if (red < 0 || red >= RED || stupac < 0 || stupac >= STUPAC) {
         return;
@@ -234,6 +282,10 @@ static void delete_celija(const int red, const int stupac) {
     }
 }
 
+//Funkcija za prebacivanje kontejnera iz jedne celije u drugu.
+//Prvo provjerava postoji li kontejner u celiji pa trazi korisnika manualni unos oznake
+//s tim da je dozvoljeno micati samo kontejner na vru stoga, onda trazi od korisnika ciljnu celiju
+//te ako je ona valjana, i nije puna, kontejner se premjesta i datoteka se azurira.
 static void move_celija(const int red, const int stupac) {
     if (red < 0 || red >= RED || stupac < 0 || stupac >= STUPAC) {
         return;
@@ -275,7 +327,9 @@ static void move_celija(const int red, const int stupac) {
     printf(ZELENA "Premjesteno.\n" RESET);
 }
 
-// Binarna pretraga kontejnera rekurzivno
+//Binarna pretraga kontejnera rekurzivno
+//Dijeli niz na pola i usporedjuje srednji element s trazenim. Ako ga nadje, vraca indeks.
+//Ako nije, nastavlja traziti po lijevoj ili desnoj polovici.
 static int b_search(kontejner* kontejneri, const int l, const int r, const char* trazeni) {
     if (l > r) return -1;  // nije pronadjeno
     
@@ -290,7 +344,9 @@ static int b_search(kontejner* kontejneri, const int l, const int r, const char*
     
     return b_search(kontejneri, mid + 1, r, trazeni);
 }
-
+//Funkcija za pretrazivanje kontejnera
+//Trazi unos oznake te za svaku celiju poziva b_search funkciju iznad.
+//Ako nadje, ispisuje lokaciju, ako ne, baca poruku da nije pronadjen.
 static void pretrazi_kontejnere(void) {
     char trazeni[NAZIV_DULJINA];
     printf(PLAVA "Unesi oznaku kontejnera za pretragu :: " RESET);
@@ -309,12 +365,18 @@ static void pretrazi_kontejnere(void) {
     printf(CRVENA "Kontejner nije pronadjen.\n" RESET);
 }
 
+
+//Funkcija za usporedbu, ide u qsort, koristim strcasecmp za usporedbu oznaka.
 static int usporedi_kontejnere(const void* a, const void* b) {
     const kontejner* ka = (const kontejner*)a;
     const kontejner* kb = (const kontejner*)b;
     return strcasecmp(ka->oznaka, kb->oznaka);
 }
 
+
+//Funkcija za popis kontejnera
+//Prikuplja sve kontejnere u jedan niz pa ih sortira uz pomoc
+//qsort i funkcije iznad tako da mala i velika slova ne igraju ulogu.
 static void popis_kontejnera(void) {
     kontejner svi_kontejneri[RED * STUPAC * MAX_KAPACITET];
     int ukupno = 0;
@@ -340,6 +402,8 @@ static void popis_kontejnera(void) {
     }
 }
 
+//Funkcija za brisanje datoteke
+//Brise datoteku i resetira mrezu, naravno sve uz potvrdu korisnika, klasicno d/n.
 static void obrisi_datoteku(void) {
     char potvrda;
     printf(CRVENA "\nJesi li siguran da zelis obrisati datoteku? (d/n) :: " RESET);
@@ -353,7 +417,7 @@ static void obrisi_datoteku(void) {
         if (remove("kontejneri.bin") == 0) {
             printf(ZELENA "Datoteka uspjesno obrisana.\n" RESET);
             
-            // Resetiranje mreže
+            //Resetiranje mreze
             for (int i = 0; i < RED; i++) {
                 for (int j = 0; j < STUPAC; j++) {
                     if (mreza[i][j].kontejneri) {
@@ -379,6 +443,7 @@ static void obrisi_datoteku(void) {
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
+//Opcije
 typedef enum {
     IZLAZ = 0,
     DODAJ = 1,
@@ -390,6 +455,7 @@ typedef enum {
     BRISI_DATOTEKU = 7
 } opcija;
 
+//Prikaz izbornika
 static void prikazi_izbornik(void) {
     printf(PLAVA "EXTERN :: Dodano ukupno %d novih kontejnera!\n" RESET, GLOBALNA_BROJILO);
     printf(ZUTA "Izbornik:\n" RESET);
@@ -406,6 +472,11 @@ static void prikazi_izbornik(void) {
 typedef void (*operacija_celija)(int, int);  // Pokazivac na funkciju
 
 int main(void) {
+	
+//Stackoverflow ponovo spasava, nisam se htio pomiriti s tim
+//da nemam boje tako da smatram da je bilo kakvo rijesenje dobro rijesenje.
+//Ako je windows u pitanju, ovo omogucuje virtualnu obradu da terminal tj
+//konzola podrzava ANSI escape kodove, znaci dobrodosle boje u moj program.
 #ifdef _WIN32
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut == INVALID_HANDLE_VALUE) return 1;
@@ -446,7 +517,7 @@ int main(void) {
                 continue;
             }
         }
-
+		//Switch caseovi za izbornik
         switch (opcija) {
             case DODAJ: {
                 operacija_celija operacija = add_celija; 
@@ -486,7 +557,7 @@ int main(void) {
 
     } while (opcija != IZLAZ);
 
-    // Sigurno brisanje memorije
+    //Sigurno brisanje memorije
     for (int i = 0; i < RED; i++) {
         for (int j = 0; j < STUPAC; j++) {
             if (mreza[i][j].kontejneri) {
@@ -497,7 +568,7 @@ int main(void) {
             }
         }
     }
-
+	//Pristojan pozdrav za kraj haha
     printf(ZELENA "Dovidjenja!\n" RESET);
     return 0;
 }
